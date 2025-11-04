@@ -1,0 +1,5 @@
+{
+  "name": "Imagen Custom Image Generator",
+  "description": "An application to generate custom-sized images using Google's Imagen 4.0 model. Enter a prompt, select an aspect ratio, and create unique visuals.",
+  "requestFramePermissions": []
+}
