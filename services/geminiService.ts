@@ -1,6 +1,5 @@
-
 import { GoogleGenAI } from "@google/genai";
-import type { AspectRatio } from '../types';
+import type { AspectRatio, ImageSize } from '../types';
 
 if (!process.env.API_KEY) {
     // This is a placeholder for development. The build environment must provide the API key.
@@ -10,16 +9,30 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
-export const generateImage = async (prompt: string, aspectRatio: AspectRatio): Promise<string> => {
+export const generateImage = async (prompt: string, imageSize: ImageSize): Promise<string> => {
     try {
+        const config: {
+            numberOfImages: number;
+            outputMimeType: string;
+            aspectRatio?: AspectRatio;
+            width?: number;
+            height?: number;
+        } = {
+            numberOfImages: 1,
+            outputMimeType: 'image/jpeg',
+        };
+
+        if (typeof imageSize === 'string') {
+            config.aspectRatio = imageSize;
+        } else if (typeof imageSize === 'object' && imageSize.width && imageSize.height) {
+            config.width = imageSize.width;
+            config.height = imageSize.height;
+        }
+
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
             prompt: prompt,
-            config: {
-                numberOfImages: 1,
-                outputMimeType: 'image/jpeg',
-                aspectRatio: aspectRatio,
-            },
+            config: config,
         });
 
         if (response.generatedImages && response.generatedImages.length > 0) {

@@ -1,34 +1,41 @@
 import React from 'react';
 import LoadingSpinner from './LoadingSpinner';
-import type { AspectRatio } from '../types';
+import type { ImageSize } from '../types';
 
 interface ImageDisplayProps {
   isLoading: boolean;
   generatedImage: string | null;
   error: string | null;
-  aspectRatio: AspectRatio;
+  imageSize: ImageSize;
   prompt: string;
 }
 
-const getAspectRatioClass = (ratio: AspectRatio) => {
-  switch (ratio) {
-    case '16:9': return 'aspect-[16/9]';
-    case '1:1': return 'aspect-square';
-    case '9:16': return 'aspect-[9/16]';
-    case '4:3': return 'aspect-[4/3]';
-    case '3:4': return 'aspect-[3/4]';
-    default: return 'aspect-video';
+const getAspectRatioStyle = (size: ImageSize): { style?: React.CSSProperties; className: string } => {
+  if (typeof size === 'string') {
+    switch (size) {
+      case '16:9': return { className: 'aspect-[16/9]' };
+      case '1:1': return { className: 'aspect-square' };
+      case '9:16': return { className: 'aspect-[9/16]' };
+      case '4:3': return { className: 'aspect-[4/3]' };
+      case '3:4': return { className: 'aspect-[3/4]' };
+      default: return { className: 'aspect-video' };
+    }
   }
-}
+  if (size.width > 0 && size.height > 0) {
+    return { style: { aspectRatio: `${size.width} / ${size.height}` }, className: '' };
+  }
+  return { className: 'aspect-video' }; // Fallback
+};
+
 
 const ImageDisplay: React.FC<ImageDisplayProps> = ({
   isLoading,
   generatedImage,
   error,
-  aspectRatio,
+  imageSize,
   prompt
 }) => {
-  const aspectRatioClass = getAspectRatioClass(aspectRatio);
+  const { style, className } = getAspectRatioStyle(imageSize);
 
   const renderContent = () => {
     if (isLoading) {
@@ -104,7 +111,9 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
   };
 
   return (
-    <div className={`w-full max-w-4xl bg-gray-800/50 border-2 border-dashed border-gray-700 rounded-xl flex items-center justify-center p-4 transition-all duration-300 ${aspectRatioClass}`}>
+    <div
+      style={style}
+      className={`w-full max-w-4xl bg-gray-800/50 border-2 border-dashed border-gray-700 rounded-xl flex items-center justify-center p-4 transition-all duration-300 ${className}`}>
         {renderContent()}
     </div>
   );

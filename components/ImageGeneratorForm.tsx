@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import type { AspectRatio } from '../types';
+import React from 'react';
+import type { AspectRatio, ImageSize } from '../types';
 
 interface ImageGeneratorFormProps {
   prompt: string;
   setPrompt: (prompt: string) => void;
-  aspectRatio: AspectRatio;
-  setAspectRatio: (aspectRatio: AspectRatio) => void;
+  imageSize: ImageSize;
+  setImageSize: (size: ImageSize) => void;
   onSubmit: () => void;
   isLoading: boolean;
 }
@@ -30,31 +30,11 @@ const customOption = {
   ),
 };
 
-const allOptions = [...presetOptions, customOption];
-
-const ratioValues: { [key in AspectRatio]: number } = {
-  '16:9': 16 / 9,
-  '4:3': 4 / 3,
-  '1:1': 1,
-  '3:4': 3 / 4,
-  '9:16': 9 / 16,
-};
-
-const findClosestAspectRatio = (w: number, h: number): AspectRatio => {
-  if (h === 0 || w === 0) return '16:9';
-  const targetRatio = w / h;
-  return (Object.keys(ratioValues) as AspectRatio[]).reduce((prev, curr) => {
-    return Math.abs(ratioValues[curr] - targetRatio) < Math.abs(ratioValues[prev] - targetRatio) ? curr : prev;
-  });
-};
-
-
 const AspectRatioButton: React.FC<{
-  option: typeof allOptions[0];
+  option: (typeof presetOptions)[0] | typeof customOption;
   isSelected: boolean;
-  isEffective?: boolean;
   onClick: () => void;
-}> = ({ option, isSelected, isEffective, onClick }) => (
+}> = ({ option, isSelected, onClick }) => (
     <button
       type="button"
       onClick={onClick}
@@ -63,7 +43,7 @@ const AspectRatioButton: React.FC<{
         isSelected
           ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg'
           : 'bg-gray-700 border-gray-600 hover:bg-gray-600 hover:border-gray-500 text-gray-300'
-      } ${isEffective ? 'ring-2 ring-offset-2 ring-offset-gray-800 ring-green-400' : ''}`}
+      }`}
     >
       {option.icon}
       <span className="text-sm font-semibold mt-2">{option.label}</span>
@@ -75,24 +55,35 @@ const AspectRatioButton: React.FC<{
 const ImageGeneratorForm: React.FC<ImageGeneratorFormProps> = ({
   prompt,
   setPrompt,
-  aspectRatio,
-  setAspectRatio,
+  imageSize,
+  setImageSize,
   onSubmit,
   isLoading,
 }) => {
-  const [selectedOption, setSelectedOption] = useState<AspectRatio | 'custom'>(aspectRatio);
-  const [customWidth, setCustomWidth] = useState(1920);
-  const [customHeight, setCustomHeight] = useState(1080);
-  
-  useEffect(() => {
-    if (selectedOption === 'custom') {
-      const closest = findClosestAspectRatio(customWidth, customHeight);
-      if (closest !== aspectRatio) {
-        setAspectRatio(closest);
-      }
-    }
-  }, [customWidth, customHeight, selectedOption, aspectRatio, setAspectRatio]);
+  const isCustom = typeof imageSize === 'object';
+  const selectedOption = isCustom ? 'custom' : imageSize;
 
+  const handleOptionClick = (option: AspectRatio | 'custom') => {
+    if (option === 'custom') {
+      if (!isCustom) {
+        setImageSize({ width: 1920, height: 1080 });
+      }
+    } else {
+      setImageSize(option);
+    }
+  };
+
+  const handleCustomDimensionChange = (dimension: 'width' | 'height', value: string) => {
+    if (!isCustom) return;
+
+    const numericValue = parseInt(value, 10) || 64;
+    const clampedValue = Math.max(64, Math.min(4096, numericValue));
+
+    setImageSize({
+      ...imageSize,
+      [dimension]: clampedValue,
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,44 +117,44 @@ const ImageGeneratorForm: React.FC<ImageGeneratorFormProps> = ({
                 key={option.value}
                 option={option}
                 isSelected={selectedOption === option.value}
-                isEffective={aspectRatio === option.value && selectedOption === 'custom'}
-                onClick={() => {
-                  setSelectedOption(option.value);
-                  setAspectRatio(option.value);
-                }}
+                onClick={() => handleOptionClick(option.value)}
              />
           ))}
            <AspectRatioButton
                 key={customOption.value}
                 option={customOption}
                 isSelected={selectedOption === 'custom'}
-                onClick={() => setSelectedOption('custom')}
+                onClick={() => handleOptionClick('custom')}
             />
         </div>
-        {selectedOption === 'custom' && (
+        {isCustom && (
           <div className="mt-4 p-4 bg-gray-700/50 rounded-lg animate-fade-in">
             <h3 className="text-sm font-medium text-gray-300 mb-2">Custom Dimensions</h3>
             <div className="flex items-center space-x-2">
               <input 
                 type="number"
                 aria-label="Custom width"
-                value={customWidth}
-                onChange={(e) => setCustomWidth(parseInt(e.target.value, 10) || 0)}
+                value={imageSize.width}
+                onChange={(e) => handleCustomDimensionChange('width', e.target.value)}
                 className="w-full bg-gray-900 border border-gray-600 rounded-lg p-2 text-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                min="1"
+                min="64"
+                max="4096"
+                disabled={isLoading}
               />
               <span className="text-gray-400 font-bold">x</span>
               <input 
                 type="number"
                 aria-label="Custom height"
-                value={customHeight}
-                onChange={(e) => setCustomHeight(parseInt(e.target.value, 10) || 0)}
+                value={imageSize.height}
+                onChange={(e) => handleCustomDimensionChange('height', e.target.value)}
                 className="w-full bg-gray-900 border border-gray-600 rounded-lg p-2 text-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                min="1"
+                min="64"
+                max="4096"
+                disabled={isLoading}
               />
             </div>
             <p className="text-xs text-gray-400 mt-2 text-center">
-              Note: The closest supported ratio ({aspectRatio}) will be used.
+              Dimensions must be between 64 and 4096px.
             </p>
           </div>
         )}

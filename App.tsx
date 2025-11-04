@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { generateImage } from './services/geminiService';
-import type { AspectRatio } from './types';
+import type { ImageSize } from './types';
 import Header from './components/Header';
 import ImageGeneratorForm from './components/ImageGeneratorForm';
 import ImageDisplay from './components/ImageDisplay';
@@ -8,7 +8,7 @@ import Footer from './components/Footer';
 
 function App() {
   const [prompt, setPrompt] = useState<string>('A photorealistic image of a futuristic city skyline at dusk, with flying vehicles and neon lights.');
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
+  const [imageSize, setImageSize] = useState<ImageSize>('16:9');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +23,7 @@ function App() {
     setGeneratedImage(null);
 
     try {
-      const imageUrl = await generateImage(prompt, aspectRatio);
+      const imageUrl = await generateImage(prompt, imageSize);
       setGeneratedImage(imageUrl);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -32,7 +32,7 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [prompt, aspectRatio]);
+  }, [prompt, imageSize]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-900 font-sans">
@@ -42,8 +42,8 @@ function App() {
           <ImageGeneratorForm
             prompt={prompt}
             setPrompt={setPrompt}
-            aspectRatio={aspectRatio}
-            setAspectRatio={setAspectRatio}
+            imageSize={imageSize}
+            setImageSize={setImageSize}
             onSubmit={handleGenerateImage}
             isLoading={isLoading}
           />
@@ -53,7 +53,7 @@ function App() {
             isLoading={isLoading}
             generatedImage={generatedImage}
             error={error}
-            aspectRatio={aspectRatio}
+            imageSize={imageSize}
             prompt={prompt}
           />
         </div>
